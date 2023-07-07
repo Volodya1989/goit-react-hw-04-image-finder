@@ -28,8 +28,6 @@ const Searchbar = ({ onSubmit }) => {
       setQueryParam(queryParam);
       return Notiflix.Notify.failure('Please type in some search key word');
     }
-    console.log('oldQuery.current', oldQuery.current);
-    console.log('queryParam', queryParam);
 
     if (
       oldQuery.current &&

@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { Container } from './App.styled';
 import getPictures from '../../api/API';
 import Button from 'components/Button';
@@ -6,41 +6,36 @@ import ImageGallery from 'components/ImageGallery';
 import Loader from 'components/Loader';
 import Modal from 'components/Modal';
 import Notiflix from 'notiflix';
-
 import Searchbar from 'components/Searchbar';
-export class App extends Component {
-  state = {
-    pictures: [],
-    pageCounter: 1,
-    query: '',
-    activeImg: '',
-    isShowModal: false,
-    isLoading: false,
-    isLoadMore: false,
-  };
 
-  componentDidUpdate(_, prevState) {
-    const { query, pageCounter } = this.state;
-    if (prevState.query !== query || prevState.pageCounter !== pageCounter) {
-      this.onGettingImages(query, pageCounter, query);
+export const App = () => {
+  const [pictures, setPictures] = useState([]);
+  const [pageCounter, setPageCounter] = useState(() => 1);
+  const [query, setQuery] = useState('');
+  const [activeImg, setActiveImg] = useState('');
+  const [isShowModal, setIsShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadMore, setIsLoadMore] = useState(false);
+
+  useEffect(() => {
+    if (query === '') {
+      return;
     }
-  }
+    onGettingImages(query, pageCounter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageCounter, query]);
 
-  async onGettingImages(queryParam, pageCounter) {
+  const onGettingImages = async (queryParam, pageCounter) => {
     try {
-      this.setState({ isLoading: true });
+      setIsLoading(true);
+
       const response = await getPictures(queryParam, pageCounter);
       const { hits, totalHits } = await response.data;
-      this.setState({ isLoading: false });
 
-      this.setState(({ pictures }) => {
-        return {
-          pictures: [...pictures, ...hits],
-        };
-      });
-      this.setState({
-        isLoadMore: pageCounter < Math.ceil(Number(totalHits) / 12),
-      });
+      setIsLoading(false);
+      setPictures(prevPictures => [...prevPictures, ...hits]);
+      setIsLoadMore(pageCounter < Math.ceil(Number(totalHits) / 12));
+
       if (totalHits !== 0 && pageCounter === 1) {
         Notiflix.Notify.success(
           `We have found ${totalHits} images for you to see!`
@@ -54,7 +49,7 @@ export class App extends Component {
       }
 
       setTimeout(() => {
-        if (!this.state.isLoadMore && pageCounter > 1) {
+        if (!isLoadMore && pageCounter > 1) {
           Notiflix.Notify.info(
             `There are no more additonal images with this query...`
           );
@@ -63,46 +58,37 @@ export class App extends Component {
     } catch (e) {
       console.log(e);
     }
-  }
-  onSubmit = query => {
-    this.setState({ query: query.trim(), pictures: [], pageCounter: 1 });
-  };
-  onLoadMore = () => {
-    this.setState(({ pageCounter }) => {
-      return { pageCounter: pageCounter + 1 };
-    });
-  };
-  toggleModal = () => {
-    this.setState(({ isShowModal }) => ({
-      isShowModal: !isShowModal,
-    }));
   };
 
-  onClick = (_, img) => {
-    this.setState({
-      activeImg: img,
-    });
-
-    this.toggleModal();
+  const onSubmit = query => {
+    setQuery(query);
+    setPictures([]);
+    setPageCounter(1);
   };
 
-  render() {
-    const { pictures, isShowModal, activeImg, isLoading, isLoadMore } =
-      this.state;
+  const onLoadMore = () => {
+    setPageCounter(prevCounter => prevCounter + 1);
+  };
 
-    return (
-      <Container>
-        <Searchbar onSubmit={this.onSubmit} />
-        {isLoading && <Loader />}
-        <ImageGallery data={pictures} onClick={this.onClick} />
-        {isLoadMore && <Button onLoad={this.onLoadMore} />}
+  const toggleModal = () => {
+    setIsShowModal(prevIsShowModal => !prevIsShowModal);
+  };
 
-        {isShowModal && (
-          <Modal activeImg={activeImg} onClose={this.toggleModal} />
-        )}
-      </Container>
-    );
-  }
-}
+  const onClick = (_, img) => {
+    setActiveImg(img);
+    toggleModal();
+  };
+
+  return (
+    <Container>
+      <Searchbar onSubmit={onSubmit} />
+      {isLoading && <Loader />}
+      <ImageGallery data={pictures} onClick={onClick} />
+      {isLoadMore && <Button onLoad={onLoadMore} />}
+
+      {isShowModal && <Modal activeImg={activeImg} onClose={toggleModal} />}
+    </Container>
+  );
+};
 
 export default App;
