@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 import { SearchbarStyled, Form, Input, ButtonStyled } from './Searchbar.styled';
@@ -6,7 +6,7 @@ import { BsSearch } from 'react-icons/bs';
 import Notiflix from 'notiflix';
 
 const Searchbar = ({ onSubmit }) => {
-  let oldQuery = null;
+  const oldQuery = useRef(null);
 
   const [queryParam, setQueryParam] = useState('');
 
@@ -28,14 +28,20 @@ const Searchbar = ({ onSubmit }) => {
       setQueryParam(queryParam);
       return Notiflix.Notify.failure('Please type in some search key word');
     }
-    if (oldQuery && oldQuery.trim() === queryParam.trim()) {
+    console.log('oldQuery.current', oldQuery.current);
+    console.log('queryParam', queryParam);
+
+    if (
+      oldQuery.current &&
+      oldQuery.current.toLowerCase().trim() === queryParam.toLowerCase().trim()
+    ) {
       reset();
 
       return Notiflix.Notify.info(
         'This is the same query that you have already  entered. Please type new one for new results.'
       );
     }
-    oldQuery = queryParam.trim();
+    oldQuery.current = queryParam.trim();
 
     onSubmit(queryParam);
 
